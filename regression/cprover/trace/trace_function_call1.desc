@@ -6,5 +6,5 @@ trace_function_call1.c
 ^Trace for main\.assertion\.1:$
 ^   9 foo::parameter := 123$
 ^   3 return_value := 124$
-^   4 main::1::x := 124$
+^   9 main::1::x := 124$
 --

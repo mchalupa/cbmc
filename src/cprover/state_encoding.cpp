@@ -843,6 +843,9 @@ void state_encodingt::function_call_symbol(
     auto exit_state =
       symbol_exprt(exit_state_identifier, state_predicate_type());
 
+    // done with function, reset source location to call site
+    dest.set_source_location(loc->source_location());
+
     // now assign the return value, if any
     if(loc->call_lhs().is_not_nil())
     {
