@@ -64,6 +64,7 @@ optionalt<exprt> address_to_lvalue(exprt src)
 void show_trace(
   const std::vector<framet> &frames,
   const propertyt &property,
+  bool verbose,
   const namespacet &ns)
 {
   irep_idt function_id, file;
@@ -90,17 +91,24 @@ void show_trace(
 
     if(step.updates.empty())
     {
-      bool first = true;
-      for(auto &implication : frame.implications)
+      if(!verbose)
       {
-        if(first)
-          first = false;
-        else
+        consolet::out() << "(no assignment)\n";
+      }
+      else
+      {
+        bool first = true;
+        for(auto &implication : frame.implications)
         {
-          consolet::out() << std::setw(4) << ' ';
+          if(first)
+            first = false;
+          else
+          {
+            consolet::out() << std::setw(4) << ' ';
+          }
+          consolet::out() << "constraint: " << format(implication.as_expr())
+                          << '\n';
         }
-        consolet::out() << "constraint: " << format(implication.as_expr())
-                        << '\n';
       }
     }
     else
@@ -131,6 +139,7 @@ void show_trace(
 void report_traces(
   const std::vector<framet> &frames,
   const std::vector<propertyt> &properties,
+  bool verbose,
   const namespacet &ns)
 {
   for(auto &property : properties)
@@ -142,7 +151,7 @@ void report_traces(
                       << property.property_id() << consolet::reset << ':'
                       << '\n';
 
-      show_trace(frames, property, ns);
+      show_trace(frames, property, verbose, ns);
     }
   }
 }

@@ -17,6 +17,7 @@ Author:
 void report_traces(
   const std::vector<framet> &frames,
   const std::vector<propertyt> &properties,
+  bool verbose,
   const namespacet &);
 
 #endif // CPROVER_CPROVER_REPORT_TRACES_H

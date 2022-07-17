@@ -25,6 +25,7 @@ Author:
 #include "free_symbols.h"
 #include "propagate.h"
 #include "report_properties.h"
+#include "report_traces.h"
 #include "solver_types.h"
 #include "state.h"
 
@@ -432,7 +433,7 @@ solver_resultt solver(
   report_properties(properties);
 
   if(solver_options.trace)
-    report_traces(frames, properties, ns);
+    report_traces(frames, properties, solver_options.verbose, ns);
 
   // overall outcome
   return overall_outcome(properties);
