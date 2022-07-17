@@ -19,6 +19,7 @@ Author:
 
 #include "axioms.h"
 #include "bv_pointers_wide.h"
+#include "simplify_state_expr.h"
 #include "state.h"
 
 #include <iostream>
@@ -57,12 +58,21 @@ void show_assignment(const bv_pointers_widet &solver)
 static exprt evaluator_rec(
   const std::unordered_map<exprt, exprt, irep_hash> &memory,
   const decision_proceduret &solver,
-  exprt src)
+  exprt src,
+  const namespacet &ns)
 {
   if(src.id() == ID_evaluate)
   {
     const auto &evaluate_expr = to_evaluate_expr(src);
-    auto m_it = memory.find(evaluate_expr.address());
+
+    // recursively get the address
+    auto address_evaluated =
+      evaluator_rec(memory, solver, evaluate_expr.address(), ns);
+
+    auto address_simplified =
+      simplify_expr(simplify_state_expr(address_evaluated, {}, ns), ns);
+
+    auto m_it = memory.find(address_simplified);
     if(m_it == memory.end())
       return src;
     else
@@ -76,7 +86,7 @@ static exprt evaluator_rec(
   else
   {
     for(auto &op : src.operands())
-      op = evaluator_rec(memory, solver, op);
+      op = evaluator_rec(memory, solver, op, ns);
 
     return src;
   }
@@ -88,8 +98,8 @@ static exprt evaluator(
   exprt src,
   const namespacet &ns)
 {
-  auto tmp = evaluator_rec(memory, solver, src);
-  return simplify_expr(tmp, ns);
+  auto tmp = evaluator_rec(memory, solver, src, ns);
+  return simplify_expr(simplify_state_expr(tmp, {}, ns), ns);
 }
 
 propertyt::tracet counterexample(
