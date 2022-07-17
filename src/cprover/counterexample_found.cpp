@@ -104,6 +104,9 @@ propertyt::tracet counterexample(
   // map from memory addresses to memory values
   std::unordered_map<exprt, exprt, irep_hash> memory;
 
+  // heap object counter
+  std::size_t heap_object_counter = 0;
+
   // work.path goes backwards, we want a forwards trace
   for(auto r_it = work.path.rbegin(); r_it != work.path.rend(); ++r_it)
   {
@@ -121,6 +124,16 @@ propertyt::tracet counterexample(
         const auto &update_state = to_update_state_expr(argument);
         auto address = evaluator(memory, solver, update_state.address(), ns);
         auto value = evaluator(memory, solver, update_state.new_value(), ns);
+
+        if(value.id() == ID_allocate)
+        {
+          // replace by a numbered 'heap object'
+          heap_object_counter++;
+          auto object_type = to_pointer_type(value.type()).base_type();
+          auto identifier = "heap-" + std::to_string(heap_object_counter);
+          value = object_address_exprt(symbol_exprt(identifier, object_type));
+        }
+
         state.updates.emplace_back(address, value);
         memory[address] = value;
       }
