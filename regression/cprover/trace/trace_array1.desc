@@ -1,5 +1,5 @@
 CORE
-trace2.c
+trace_array1.c
 --trace
 ^EXIT=10$
 ^SIGNAL=0$
