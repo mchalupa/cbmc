@@ -261,6 +261,23 @@ std::size_t count_frame(const workt::patht &path, frame_reft f)
   });
 }
 
+class take_time_resourcet
+{
+public:
+  take_time_resourcet(std::chrono::time_point<std::chrono::steady_clock> &_dest)
+    : dest(_dest)
+  {
+  }
+
+  ~take_time_resourcet()
+  {
+    dest = std::chrono::steady_clock::now();
+  }
+
+protected:
+  std::chrono::time_point<std::chrono::steady_clock> &dest;
+};
+
 void solver(
   std::vector<framet> &frames,
   const std::unordered_set<symbol_exprt, irep_hash> &address_taken,
@@ -271,6 +288,9 @@ void solver(
 {
   const auto frame_map = build_frame_map(frames);
   auto &property = properties[property_index];
+
+  property.start = std::chrono::steady_clock::now();
+  take_time_resourcet stop_time(property.stop);
 
   if(solver_options.verbose)
     std::cout << "\nDoing " << format(property.condition) << '\n';

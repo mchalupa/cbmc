@@ -15,6 +15,8 @@ Author:
 
 #include "console.h"
 
+#include <iomanip>
+
 void report_properties(const std::vector<propertyt> &properties)
 {
   irep_idt current_file, current_function;
@@ -83,6 +85,13 @@ void report_properties(const std::vector<propertyt> &properties)
       consolet::out() << consolet::yellow << "UNKNOWN" << consolet::reset;
       break;
     }
+
+#if 0
+    consolet::out()
+      << ' ' << consolet::faint << std::setw(1) << std::setprecision(1)
+      << std::chrono::duration<double>(property.stop - property.start).count()
+      << 's' << consolet::reset;
+#endif
 
     consolet::out() << '\n';
   }

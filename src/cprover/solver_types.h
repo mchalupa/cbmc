@@ -15,6 +15,7 @@ Author:
 #include <util/mathematical_expr.h>
 #include <util/std_expr.h>
 
+#include <chrono>
 #include <unordered_map>
 
 class frame_reft
@@ -113,6 +114,7 @@ public:
 
   using statust = enum { UNKNOWN, PASS, REFUTED, ERROR, DROPPED };
   statust status = UNKNOWN;
+  std::chrono::time_point<std::chrono::steady_clock> start, stop;
 
   // trace information when REFUTED
   struct trace_updatet
