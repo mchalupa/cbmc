@@ -399,50 +399,7 @@ void axiomst::node(const exprt &src)
 {
   if(src.id() == ID_state_is_cstring)
   {
-    auto &is_cstring_expr = to_state_is_cstring_expr(src);
-    is_cstring_exprs.insert(is_cstring_expr);
-
-    {
-      // is_cstring(ς, p) ⇒ r_ok(ς, p, 1)
-      auto ok_expr = ternary_exprt(
-        ID_state_r_ok,
-        is_cstring_expr.state(),
-        is_cstring_expr.address(),
-        from_integer(1, size_type()),
-        bool_typet());
-
-      auto instance1 = replace(implies_exprt(src, ok_expr));
-      if(verbose)
-        std::cout << "AXIOMa1: " << format(instance1) << "\n";
-      dest << instance1;
-
-      auto ok_simplified = simplify_state_expr(ok_expr, address_taken, ns);
-      ok_simplified.visit_pre([this](const exprt &src) { node(src); });
-      auto instance2 = replace(implies_exprt(src, ok_simplified));
-      if(verbose)
-        std::cout << "AXIOMa2: " << format(instance2) << "\n";
-      dest << instance2;
-    }
-
-    {
-      // is_cstring(ς, p) --> is_cstring(ς, p + 1) ∨ ς(p)=0
-      auto state = is_cstring_expr.state();
-      auto p = is_cstring_expr.address();
-      auto one = from_integer(1, signed_size_type());
-      auto p_plus_one = plus_exprt(p, one, is_cstring_expr.op1().type());
-      auto is_cstring_plus_one = state_is_cstring_exprt(state, p_plus_one);
-      auto char_type = to_pointer_type(p.type()).base_type();
-      auto zero = from_integer(0, char_type);
-      auto star_p = evaluate_exprt(state, p, char_type);
-      auto is_zero = equal_exprt(star_p, zero);
-      auto instance =
-        replace(implies_exprt(src, or_exprt(is_cstring_plus_one, is_zero)));
-      if(verbose)
-        std::cout << "AXIOMb: " << format(instance) << "\n";
-      dest << instance;
-      evaluate_exprs.insert(star_p);
-      is_cstring_exprs.insert(is_cstring_plus_one);
-    }
+    add(to_state_is_cstring_expr(src), false);
   }
   else if(src.id() == ID_state_is_sentinel_dll)
   {
@@ -731,6 +688,56 @@ void axiomst::node(const exprt &src)
         std::cout << "AXIOMe: " << format(instance) << "\n";
       dest << instance;
     }
+  }
+}
+
+void axiomst::add(const state_is_cstring_exprt &is_cstring_expr, bool recursive)
+{
+  if(!is_cstring_exprs.insert(is_cstring_expr).second)
+    return; // already there
+
+  {
+    // is_cstring(ς, p) ⇒ r_ok(ς, p, 1)
+    auto ok_expr = ternary_exprt(
+      ID_state_r_ok,
+      is_cstring_expr.state(),
+      is_cstring_expr.address(),
+      from_integer(1, size_type()),
+      bool_typet());
+
+    auto instance1 = replace(implies_exprt(is_cstring_expr, ok_expr));
+    if(verbose)
+      std::cout << "AXIOMa1: " << format(instance1) << "\n";
+    dest << instance1;
+
+    auto ok_simplified = simplify_state_expr(ok_expr, address_taken, ns);
+    ok_simplified.visit_pre([this](const exprt &src) { node(src); });
+    auto instance2 = replace(implies_exprt(is_cstring_expr, ok_simplified));
+    if(verbose)
+      std::cout << "AXIOMa2: " << format(instance2) << "\n";
+    dest << instance2;
+  }
+
+  if(!recursive)
+  {
+    // is_cstring(ς, p) --> is_cstring(ς, p + 1) ∨ ς(p)=0
+    auto state = is_cstring_expr.state();
+    auto p = is_cstring_expr.address();
+    auto one = from_integer(1, signed_size_type());
+    auto p_plus_one = plus_exprt(p, one, is_cstring_expr.op1().type());
+    auto is_cstring_plus_one = state_is_cstring_exprt(state, p_plus_one);
+    auto char_type = to_pointer_type(p.type()).base_type();
+    auto zero = from_integer(0, char_type);
+    auto star_p = evaluate_exprt(state, p, char_type);
+    auto is_zero = equal_exprt(star_p, zero);
+    auto instance = replace(
+      implies_exprt(is_cstring_expr, or_exprt(is_cstring_plus_one, is_zero)));
+    if(verbose)
+      std::cout << "AXIOMb: " << format(instance) << "\n";
+    dest << instance;
+    evaluate_exprs.insert(star_p);
+    is_cstring_exprs.insert(is_cstring_plus_one);
+    // add(is_cstring_plus_one, true); // rec. call
   }
 }
 

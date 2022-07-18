@@ -69,6 +69,7 @@ protected:
   void evaluate_fc();
 
   std::set<state_is_cstring_exprt> is_cstring_exprs;
+  void add(const state_is_cstring_exprt &, bool recursive);
   void is_cstring_fc();
 
   std::set<state_is_dynamic_object_exprt> is_dynamic_object_exprs;
