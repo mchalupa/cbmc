@@ -620,74 +620,79 @@ void axiomst::node(const exprt &src)
     src.id() == ID_state_r_ok || src.id() == ID_state_w_ok ||
     src.id() == ID_state_rw_ok)
   {
-    const auto &ok_expr = to_state_ok_expr(src);
-    ok_exprs.insert(ok_expr);
+    add(to_state_ok_expr(src));
+  }
+}
 
-    const auto &state = ok_expr.state();
-    const auto &pointer = ok_expr.address();
-    const auto &size = ok_expr.size();
+void axiomst::add(const state_ok_exprt &ok_expr)
+{
+  if(!ok_exprs.insert(ok_expr).second)
+    return; // already there
 
-    {
-      // X_ok(p, s) <-->
-      //   live_object(p)
-      // ∧ offset(p)+s≤object_size(p)
-      // ∧ writeable_object(p)           if applicable
-      auto live_object = state_live_object_exprt(state, pointer);
-      live_object_exprs.insert(live_object);
-      auto live_object_simplified =
-        simplify_state_expr_node(live_object, address_taken, ns);
+  const auto &state = ok_expr.state();
+  const auto &pointer = ok_expr.address();
+  const auto &size = ok_expr.size();
 
-      auto writeable_object = state_writeable_object_exprt(state, pointer);
-      writeable_object_exprs.insert(writeable_object);
+  {
+    // X_ok(p, s) <-->
+    //   live_object(p)
+    // ∧ offset(p)+s≤object_size(p)
+    // ∧ writeable_object(p)           if applicable
+    auto live_object = state_live_object_exprt(state, pointer);
+    live_object_exprs.insert(live_object);
+    auto live_object_simplified =
+      simplify_state_expr_node(live_object, address_taken, ns);
 
-      auto writeable_object_simplified =
-        simplify_state_expr_node(writeable_object, address_taken, ns);
+    auto writeable_object = state_writeable_object_exprt(state, pointer);
+    writeable_object_exprs.insert(writeable_object);
 
-      auto ssize_type = signed_size_type();
-      auto offset = pointer_offset_exprt(pointer, ssize_type);
-      auto offset_simplified =
-        simplify_state_expr_node(offset, address_taken, ns);
-      //      auto lower = binary_relation_exprt(
-      //        offset_simplified, ID_ge, from_integer(0, ssize_type));
+    auto writeable_object_simplified =
+      simplify_state_expr_node(writeable_object, address_taken, ns);
 
-      auto size_type = ::size_type();
+    auto ssize_type = signed_size_type();
+    auto offset = pointer_offset_exprt(pointer, ssize_type);
+    auto offset_simplified =
+      simplify_state_expr_node(offset, address_taken, ns);
+    //      auto lower = binary_relation_exprt(
+    //        offset_simplified, ID_ge, from_integer(0, ssize_type));
 
-      // extend one bit, to cover overflow case
-      auto size_type_ext = unsignedbv_typet(size_type.get_width() + 1);
+    auto size_type = ::size_type();
 
-      auto object_size = state_object_size_exprt(state, pointer, size_type);
-      object_size_exprs.insert(object_size);
+    // extend one bit, to cover overflow case
+    auto size_type_ext = unsignedbv_typet(size_type.get_width() + 1);
 
-      auto object_size_casted = typecast_exprt(object_size, size_type_ext);
+    auto object_size = state_object_size_exprt(state, pointer, size_type);
+    object_size_exprs.insert(object_size);
 
-      auto offset_casted_to_unsigned =
-        typecast_exprt::conditional_cast(offset_simplified, size_type);
-      auto offset_extended = typecast_exprt::conditional_cast(
-        offset_casted_to_unsigned, size_type_ext);
-      auto size_casted = typecast_exprt::conditional_cast(size, size_type_ext);
-      auto upper = binary_relation_exprt(
-        plus_exprt(offset_extended, size_casted), ID_le, object_size_casted);
+    auto object_size_casted = typecast_exprt(object_size, size_type_ext);
 
-      auto conjunction = and_exprt(live_object_simplified, upper);
+    auto offset_casted_to_unsigned =
+      typecast_exprt::conditional_cast(offset_simplified, size_type);
+    auto offset_extended = typecast_exprt::conditional_cast(
+      offset_casted_to_unsigned, size_type_ext);
+    auto size_casted = typecast_exprt::conditional_cast(size, size_type_ext);
+    auto upper = binary_relation_exprt(
+      plus_exprt(offset_extended, size_casted), ID_le, object_size_casted);
 
-      if(src.id() == ID_state_w_ok || src.id() == ID_state_rw_ok)
-        conjunction.add_to_operands(std::move(writeable_object));
+    auto conjunction = and_exprt(live_object_simplified, upper);
 
-      auto instance = replace(equal_exprt(src, conjunction));
+    if(ok_expr.id() == ID_state_w_ok || ok_expr.id() == ID_state_rw_ok)
+      conjunction.add_to_operands(std::move(writeable_object));
 
-      if(verbose)
-        std::cout << "AXIOMd: " << format(instance) << "\n";
-      dest << instance;
-    }
+    auto instance = replace(equal_exprt(ok_expr, conjunction));
 
-    {
-      // X_ok(ς, p) --> p!=0
-      auto instance =
-        replace(implies_exprt(src, not_exprt(null_pointer(pointer))));
-      if(verbose)
-        std::cout << "AXIOMe: " << format(instance) << "\n";
-      dest << instance;
-    }
+    if(verbose)
+      std::cout << "AXIOMd: " << format(instance) << "\n";
+    dest << instance;
+  }
+
+  {
+    // X_ok(ς, p) --> p!=0
+    auto instance =
+      replace(implies_exprt(ok_expr, not_exprt(null_pointer(pointer))));
+    if(verbose)
+      std::cout << "AXIOMe: " << format(instance) << "\n";
+    dest << instance;
   }
 }
 

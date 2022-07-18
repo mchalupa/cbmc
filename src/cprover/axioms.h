@@ -63,6 +63,7 @@ protected:
   std::set<object_address_exprt> object_address_exprs;
 
   std::set<state_ok_exprt> ok_exprs;
+  void add(const state_ok_exprt &);
   void ok_fc();
 
   std::set<evaluate_exprt> evaluate_exprs;
