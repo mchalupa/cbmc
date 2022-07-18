@@ -736,8 +736,7 @@ void axiomst::add(const state_is_cstring_exprt &is_cstring_expr, bool recursive)
       std::cout << "AXIOMb: " << format(instance) << "\n";
     dest << instance;
     evaluate_exprs.insert(star_p);
-    is_cstring_exprs.insert(is_cstring_plus_one);
-    // add(is_cstring_plus_one, true); // rec. call
+    add(is_cstring_plus_one, true); // rec. call
   }
 }
 
