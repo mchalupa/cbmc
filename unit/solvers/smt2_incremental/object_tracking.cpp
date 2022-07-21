@@ -1,5 +1,6 @@
 // Author: Diffblue Ltd.
 
+#include <util/arith_tools.h>
 #include <util/c_types.h>
 #include <util/namespace.h>
 #include <util/optional.h>
